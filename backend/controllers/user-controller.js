@@ -1,15 +1,23 @@
-const { registration, activate } = require('../services/user-service');
+const { validationResult } = require('express-validator');
+const { registration, activate, login, logout, refresh, getUsers } = require('../services/user-service');
+const ApiError = require('../exceptions/error-api');
 
 class UserController {
     async registration(req, res, next) {
         try {
+            const errors = validationResult(req);
+
+            if (!errors.isEmpty()) {
+                return next(ApiError.BadRequest('Not valid email or password', errors.array()));
+            }
+
             const { email, password } = req.body;
-            const userData = await registration(email, password)
+            const userData = await registration(email, password);
 
             res.cookie(
                 'refreshToken',
                 userData.refreshToken,
-                {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true}
+                { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true }
             );
 
             return res.json(userData);
@@ -20,7 +28,17 @@ class UserController {
 
     async login(req, res, next) {
         try {
+            const { email, password } = req.body;
 
+            const userData = await login(email, password);
+
+            res.cookie(
+                'refreshToken',
+                userData.refreshToken,
+                { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true }
+            );
+
+            return res.json(userData);
         } catch (e) {
             next(e);
         }
@@ -28,7 +46,13 @@ class UserController {
 
     async logout(req, res, next) {
         try {
+            const { refreshToken } = req.cookies;
 
+            const token = await logout(refreshToken);
+
+            res.clearCookie('refreshToken');
+
+            return res.json(token);
         } catch (e) {
             next(e);
         }
@@ -48,7 +72,15 @@ class UserController {
 
     async refresh(req, res, next) {
         try {
+            const { refreshToken } = req.cookies;
 
+            const userData = await refresh(refreshToken);
+
+            res.cookie(
+                'refreshToken',
+                userData.refreshToken,
+                { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true }
+            );
         } catch (e) {
             next(e);
         }
@@ -56,11 +88,12 @@ class UserController {
 
     async getUsers(req, res, next) {
         try {
-            res.json(['123'])
+            const users = await getUsers();
+            return res.json(users);
         } catch (e) {
             next(e);
         }
-    }
+    };
 }
 
 module.exports = new UserController();
