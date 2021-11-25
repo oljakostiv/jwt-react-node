@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const ApiError = require('../exceptions/error-api');
 const TokenModel = require('../databases/token-db');
 
 class TokenService {
@@ -10,6 +11,25 @@ class TokenService {
             accessToken,
             refreshToken
         };
+    };
+
+    async validateAccessToken(token) {
+        try {
+            const tokenData = jwt.verify(token, process.env.ACCESS_SEKRET_KEY);
+            return tokenData;
+        } catch (e) {
+            // throw ApiError.UnauthorizedError();
+            console.log(e);
+        }
+    };
+
+    async validateRefreshToken(token) {
+        try {
+            const tokenData = jwt.verify(token, process.env.REFRESH_SEKRET_KEY);
+            return tokenData;
+        } catch (e) {
+            console.log(e);
+        }
     };
 
     async saveRefreshToken(userId, refreshToken) {
@@ -32,24 +52,6 @@ class TokenService {
     async findToken(refreshToken) {
         const findToken = await TokenModel.findOne({ refreshToken });
         return findToken;
-    };
-
-    async validateAccessToken(token) {
-        try {
-           const tokenData = jwt.verify(token, process.env.ACCESS_SEKRET_KEY);
-           return tokenData;
-        } catch (e) {
-            return null;
-        }
-    };
-
-    async validateRefreshToken(token) {
-        try {
-           const tokenData = jwt.verify(token, process.env.REFRESH_SEKRET_KEY);
-           return tokenData;
-        } catch (e) {
-            return null;
-        }
     };
 }
 
