@@ -29,6 +29,7 @@ class TokenService {
             return tokenData;
         } catch (e) {
             console.log(e);
+            return null;
         }
     };
 
